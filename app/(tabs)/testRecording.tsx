@@ -3,7 +3,7 @@ import { Text, View } from '@/components/Themed';
 
 import {domisStyle} from '../domisStyles.js'
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Button, Alert } from 'react-native';
 import { useAudioRecorder, RecordingOptions, AudioModule, RecordingPresets } from 'expo-audio';
 
@@ -12,11 +12,14 @@ export default function TabOneScreen() {
 
     const record = () => {console.log('test'); audioRecorder.record(); console.log(audioRecorder.isRecording)}
   
+    const [isRecording, setRecordingState] = React.useState(false);
+
     const stopRecording = async () => {
     
       // The recording will be available on `audioRecorder.uri`.
         await audioRecorder.stop();
-        console.log("recordingStopped");
+
+        setRecordingState(true);
     };
   
     useEffect(() => {
@@ -31,9 +34,10 @@ export default function TabOneScreen() {
     return (
       <View style={styles.container}>
         <Button
-          title={audioRecorder.isRecording ? 'Stop Recording' : 'Start Recording'}
+          title= {String(isRecording)}
           onPress={audioRecorder.isRecording ? stopRecording : record}
         />
+        <Text>{audioRecorder.isRecording}</Text>
       </View>
     );
 }
