@@ -10,7 +10,7 @@ import { useAudioRecorder, RecordingOptions, AudioModule, RecordingPresets } fro
 export default function TabOneScreen() {
     const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
-    const record = () => {console.log('test'); audioRecorder.record(); console.log(audioRecorder.isRecording)}
+    const record = () => {setRecordingState(true); audioRecorder.record(); console.log(audioRecorder.isRecording)}
   
     const [isRecording, setRecordingState] = React.useState(false);
 
@@ -19,7 +19,7 @@ export default function TabOneScreen() {
       // The recording will be available on `audioRecorder.uri`.
         await audioRecorder.stop();
 
-        setRecordingState(true);
+        setRecordingState(false);
     };
   
     useEffect(() => {
