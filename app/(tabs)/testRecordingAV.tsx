@@ -4,6 +4,7 @@ import { Audio } from 'expo-av';
 
 export default function App() {
   const [recording, setRecording] = React.useState();
+  const [voiceInterval, setVoiceInterval] = React.useState();
   const [recordings, setRecordings] = React.useState([]);
 
   async function startRecording() {
@@ -16,12 +17,24 @@ export default function App() {
         });
         const { recording } = await Audio.Recording.createAsync(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
         setRecording(recording);
+
+        setVoiceInterval(setInterval(async function () {
+            console.log('test BEFORE');
+            const { frames } = await recording.getAudioRecordingStatusAsync();
+            console.log('test MIDDLE');
+            console.log(frames);
+            console.log('test END');
+        }, 100)); // Update waveform every 100ms
       }
-    } catch (err) {}
+    } catch (err) {
+        console.log(err);
+    }
   }
 
   async function stopRecording() {
     setRecording(undefined);
+    clearInterval(voiceInterval);
+    console.log('interval over');
 
     await recording.stopAndUnloadAsync();
     let allRecordings = [...recordings];
