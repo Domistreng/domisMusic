@@ -1,19 +1,25 @@
-import React from 'react';
-import { StyleSheet, Text, View, Button } from 'react-native';
+import {useCallback, useState}  from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View, Button } from 'react-native';
 import { Audio } from 'expo-av';
 import { Sound } from 'expo-av/build/Audio';
 
-import { analyzeAudio } from 'react-native-audio-analyzer';
+import {
+    scale,
+    sample,
+    robustScale,
+    trimmedScale,
+    analyzeAudio,
+  } from 'react-native-audio-analyzer';
 import type { AmplitudeData } from 'react-native-audio-analyzer';
 
 export default function App() {
-  const [recording, setRecording] = React.useState();
-  const [voiceInterval, setVoiceInterval] = React.useState();
-  const [recordings, setRecordings] = React.useState([]);
-  const [currentPitch, setCurrentPitch] = React.useState(-1);
+  const [recording, setRecording] = useState();
+  const [voiceInterval, setVoiceInterval] = useState();
+  const [recordings, setRecordings] = useState([]);
+  const [currentPitch, setCurrentPitch] = useState(-1);
 
-  const [result, setResult] = React.useState<AmplitudeData[]>([]);
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [result, setResult] = useState<AmplitudeData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   async function startRecording() {
     try {
@@ -27,17 +33,16 @@ export default function App() {
         setRecording(recording);
 
         setVoiceInterval(setInterval(async function () {
-            console.log('test BEFORE');
-            let frames = await recording.getURI();
-            // console.log('test MIDDLE');
+            // console.log('test BEFORE');
+            // let frames = await recording.getURI();
+            // // console.log('test MIDDLE');
             // console.log(frames);
-            // thisAudio = Sound.createAsync(frames);
-            // console.log(Object.getOwnPropertyNames(thisAudio));
-            const data = analyzeAudio(frames, 2);
-            console.log(data);
+            // // thisAudio = Sound.createAsync(frames);
+            // // console.log(Object.getOwnPropertyNames(thisAudio));
             
-            // Process the fileContent (base64 encoded)
-            console.log('test END');
+            
+            // // Process the fileContent (base64 encoded)
+            // console.log('test END');
         }, 100)); // Update waveform every 100ms
       }
     } catch (err) {
@@ -50,6 +55,51 @@ export default function App() {
     clearInterval(voiceInterval);
 
     await recording.stopAndUnloadAsync();
+
+    console.log('test1');
+
+
+    const start = useCallback(async () => {
+        try {
+          setIsLoading(true);
+          const data = analyzeAudio(recording.getURI(), 2);
+          setResult(data);
+        } catch (error) {
+          Alert.alert('Error', String(error));
+        } finally {
+          setIsLoading(false);
+        }
+      }, []);
+
+    const amplitudes = result.map((_) => _.amplitude);
+
+    const results = [
+        {
+        title: 'Trimmed scale:',
+        data: trimmedScale(amplitudes).map((value, index) => (
+            <View key={index} style={[styles.item, { height: value * 100 }]} />
+        )),
+        },
+        {
+        title: 'Robust scale:',
+        data: robustScale(amplitudes).map((value, index) => (
+            <View key={index} style={[styles.item, { height: value * 100 }]} />
+        )),
+        },
+        {
+        title: 'Scale + sample:',
+        data: scale(sample(amplitudes, 35)).map((value, index) => (
+            <View key={index} style={[styles.item, { height: value * 100 }]} />
+        )),
+        },
+        {
+        title: 'Scale:',
+        data: scale(amplitudes).map((value, index) => (
+            <View key={index} style={[styles.item, { height: value * 100 }]} />
+        )),
+        },
+    ];
+
     let allRecordings = [...recordings];
     const { sound, status } = await recording.createNewLoadedSoundAsync();
     allRecordings.push({
@@ -68,16 +118,26 @@ export default function App() {
   }
 
   function getRecordingLines() {
-    return recordings.map((recordingLine, index) => {
-      return (
-        <View key={index} style={styles.row}>
-          <Text style={styles.fill}>
-            Recording #{index + 1} | {recordingLine.duration}
-          </Text>
-          <Button onPress={() => recordingLine.sound.replayAsync()} title="Play"></Button>
+    return (
+        <View style={styles.container}>
+            <Button title="Start" onPress={start} />
+            {isLoading ? (
+            <ActivityIndicator style={styles.loader} size="large" />
+        ) : (
+            <View>
+                {results.map((_, index) => (
+                    <View style={styles.example} key={index}>
+                        <Text style={styles.title}>{_.title}</Text>
+                        <ScrollView horizontal style={styles.scroll}>
+                            <View style={styles.row}>{_.data}</View>
+                        </ScrollView>
+                    </View>
+                ))}
+            </View>
+        )}
         </View>
-      );
-    });
+    );
+    ;
   }
 
   function clearRecordings() {
@@ -111,5 +171,22 @@ const styles = StyleSheet.create({
   fill: {
     flex: 1,
     margin: 15
+  },
+  loader: {
+    padding: 30,
+  },
+  title: {
+    marginBottom: 5,
+  },
+  example: {
+    padding: 10,
+  },
+  scroll: {
+    maxHeight: 200,
+  },
+  item: {
+    width: 3,
+    backgroundColor: 'blue',
+    marginHorizontal: 2,
   }
 });
