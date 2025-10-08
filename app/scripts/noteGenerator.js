@@ -72,8 +72,8 @@ function createSpecificScale( {key, octaveNum, startingIndex, ascendingScale, de
     //Ascending
     for (let step = 0; step < octaveNum; step++) {
         for (var j in ascendingScale) {
-            note = ascendingScale[j]
-            thisNote = {
+            let note = ascendingScale[j]
+            let thisNote = {
                 "letter": noteDict[currentNote],
                 "octave": currentOctave,
                 "length": defaultNoteLength,
@@ -91,8 +91,8 @@ function createSpecificScale( {key, octaveNum, startingIndex, ascendingScale, de
     //Descending
     for (let step = 0; step < octaveNum; step++) {
         for (var j in descendingScale) {
-            note = descendingScale[j]
-            thisNote = {
+            let note = descendingScale[j]
+            let thisNote = {
                 "letter": noteDict[currentNote],
                 "octave": currentOctave,
                 "length": defaultNoteLength,
@@ -106,7 +106,7 @@ function createSpecificScale( {key, octaveNum, startingIndex, ascendingScale, de
             }
         }
     }
-    thisNote = {
+    let thisNote = {
         "letter": noteDict[currentNote],
         "octave": currentOctave,
         "length": defaultNoteLength,
@@ -132,7 +132,7 @@ function checkAccidentals( {scaleList} ) {
     //Ascending
     var prevLetter = ''
     
-    for (i in scaleList) {
+    for (let i in scaleList) {
         let thisLetter = scaleList[i]['letter'].charAt(0)
         let thisLetterFull = scaleList[i]['letter']
         let thisOctave = scaleList[i]['octave'];
@@ -141,7 +141,7 @@ function checkAccidentals( {scaleList} ) {
             
             thisLetter = changeAccidental( {noteLetter: thisLetterFull, octaveNum: this} )
         }
-        prevLetter = thisLetter
+        let prevLetter = thisLetter
         scaleList[i]['letter'] = thisLetter
         if (i >= scaleList.length / 2) {
             break
@@ -150,8 +150,8 @@ function checkAccidentals( {scaleList} ) {
     
     //Descending
     prevLetter = ''
-    scaleListReversed = scaleList.toReversed()
-    for (i in scaleListReversed) {
+    let scaleListReversed = scaleList.toReversed()
+    for (let i in scaleListReversed) {
         let thisLetter = scaleListReversed[i]['letter'].charAt(0)
         let thisLetterFull = scaleListReversed[i]['letter']
         
@@ -185,13 +185,13 @@ function checkScaleList( {key, scaleList} ) {
 
 
 export function generateScale( {key, types, octaveNum} ) {
-    startingIndex = noteDictReverse[key]
+    let startingIndex = noteDictReverse[key]
     console.log(key,octaveNum)
 
     if (key == 'Ab') {
         octaveNum += 1;
     }
-    retNotes = []
+    let retNotes = []
     console.log(octaveNum);
     //console.log(key)
 
@@ -294,7 +294,7 @@ export function generateScale( {key, types, octaveNum} ) {
 
     //combining all patterns
     var newRetNotes = []
-    for (i in retNotes) {
+    for (let i in retNotes) {
         newRetNotes = newRetNotes.concat(retNotes[i])
     }
     retNotes = newRetNotes

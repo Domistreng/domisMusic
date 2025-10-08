@@ -1,4 +1,3 @@
-
 // import EditScreenInfo from '@/components/EditScreenInfo';
 import { Text, View } from '@/components/Themed';
 import React, { useEffect, useContext } from 'react';
@@ -9,7 +8,7 @@ import 'react-native-get-random-values'; // needed for UUID in React Native
 import { v4 as uuidv4 } from 'uuid';
 // import * as ScreenOrientation from "expo-screen-orientation";
 
-import {domisStyle} from '../domisStyles.js'
+import { domisStyle } from '../domisStyles.js';
 
 const UNIQUE_ID_KEY = 'userUniqueId';
 
@@ -47,6 +46,7 @@ export default function TabOneScreen() {
   return (
     <View style={domisStyle.container}>
       <Text style={domisStyle.title}>Welcome to DomisMusic</Text>
+      {uniqueId && <Text style={styles.userIdText}>userId: {uniqueId}</Text>}
       <View style={domisStyle.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
     </View>
   );
@@ -56,5 +56,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   uniqueIdText: { marginTop: 10, fontWeight: 'bold' },
+  userIdText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 8,
+  },
 });
-

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { View, Button, Text, StyleSheet, Alert } from "react-native";
 import { Audio } from "expo-av";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { io } from "socket.io-client";
+import { UserContext } from '../userContext';
 
 // Replace this with your server address
 const SOCKET_SERVER_URL = "https://domis.blue:644";
@@ -14,8 +15,11 @@ export default function AudioRecordTab({ userId }) {
   const [isRecording, setIsRecording] = useState(false);
   const [thisId, setThisId] = useState(null);
 
+  const { uniqueId } = useContext(UserContext);
+
+
   useEffect(() => {
-    const generatedId = Math.random();
+    const generatedId = String(uniqueId)
     setThisId(generatedId);
 
     const socketInstance = io(SOCKET_SERVER_URL, {
@@ -115,13 +119,13 @@ export default function AudioRecordTab({ userId }) {
       setStatusMessage("Reading file and sending to server...");
       // Read file as base64 string
       const base64data = await FileSystem.readAsStringAsync(recording.uri, {
-        encoding: FileSystem.EncodingType.Base64,
+        encoding: 'base64',
       });
 
       // Emit to socket server omitting base64 prefix, similar to substring(22) in web example
       socket.emit("App Recording Submit", {
         stringVal: base64data,
-        senderId: userId,
+        senderId: thisId
       });
 
       setStatusMessage("Audio submitted to server.");

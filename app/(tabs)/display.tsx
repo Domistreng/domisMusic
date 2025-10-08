@@ -1,45 +1,99 @@
-import React, { useEffect, useState } from 'react';
-import { View, FlatList, Image, Dimensions, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useContext } from 'react';
+import { UserContext } from '../userContext';
+import { View, FlatList, Image, ActivityIndicator } from 'react-native';
+import { io, Socket } from 'socket.io-client';
 
-const BASE_IMAGE_URL = 'https://domis.blue:644/mobileDeviceTester';
-const CROP_HEIGHT = 200; // Height for the cropped display window
-const IMAGE_HEIGHT = 250; // Actual image height used for cropping calculation
-const IMAGE_WIDTH = 400; // Fixed image width
+const CROP_HEIGHT = 200;
+const IMAGE_HEIGHT = 250;
+const IMAGE_WIDTH = 400;
 
-const fetchExistingImages = async (baseUrl, maxImages = 30) => {
-  const images = [];
-  let index = 0;
-  let keepGoing = true;
-  while (keepGoing && index < maxImages) {
-    const imageUrl = `${baseUrl}/Graph${index}.png`;
-    try {
-      const response = await fetch(imageUrl, { method: 'HEAD' });
-      if (response.ok) {
-        images.push(imageUrl);
-        index += 1;
-      } else {
-        keepGoing = false;
-      }
-    } catch (error) {
-      keepGoing = false;
-    }
-  }
-  return images;
-};
-
-const ImageCarousel = () => {
-  const [images, setImages] = useState([]);
+const ImageCarousel: React.FC = () => {
+  const { uniqueId } = useContext(UserContext);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [latestTimestamp, setLatestTimestamp] = useState<string | null>(null);
+  const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const socketInstance = io('https://domis.blue:644', {
+      transports: ['websocket'], // or 'polling' if needed
+      secure: true,
+      query: { id: uniqueId },
+    });
+
+    socketInstance.on('connect', () => {
+      console.log('Socket connected:', socketInstance.id);
+    });
+    socketInstance.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+    });
+    socketInstance.on('disconnect', (reason) => {
+      console.log('Socket disconnected:', reason);
+    });
+
+    setSocket(socketInstance);
+
+    return () => {
+      socketInstance.disconnect();
+      socketInstance.off('connect');
+      socketInstance.off('connect_error');
+      socketInstance.off('disconnect');
+    };
+  }, [uniqueId]);
+
+  // Request latest timestamp from backend via socket
+  const requestLatestTimestamp = () => {
+    return new Promise<string | null>((resolve) => {
+      if (!socket) {
+        resolve(null);
+        return;
+      }
+      socket.emit('getLatestTimestamp', { userId: uniqueId });
+
+      socket.once('latestTimestamp', (data: { timestamp: string | null }) => {
+        resolve(data.timestamp);
+      });
+    });
+  };
+
+  // Fetch images by HEAD requests from base URL, stop when no more images
+  const fetchExistingImages = async (baseUrl: string, maxImages = 30) => {
+    const foundImages: string[] = [];
+    for (let index = 0; index < maxImages; index++) {
+      const url = `${baseUrl}/Graph${index}.png`;
+      try {
+        const res = await fetch(url, { method: 'HEAD' });
+        if (!res.ok) break;
+        foundImages.push(url);
+      } catch {
+        break;
+      }
+    }
+    return foundImages;
+  };
 
   useEffect(() => {
     const loadImages = async () => {
       setLoading(true);
-      const foundImages = await fetchExistingImages(BASE_IMAGE_URL, 30);
-      setImages(foundImages);
+      const timestamp = await requestLatestTimestamp();
+
+      if (!timestamp) {
+        setImages([]);
+        setLatestTimestamp(null);
+        setLoading(false);
+        return;
+      }
+      setLatestTimestamp(timestamp);
+      const baseUrl = `https://domis.blue:644/APPUSER${uniqueId}/${timestamp}`;
+      const imgs = await fetchExistingImages(baseUrl);
+      setImages(imgs);
       setLoading(false);
     };
-    loadImages();
-  }, []);
+
+    if (socket) {
+      loadImages();
+    }
+  }, [socket, uniqueId]);
 
   return (
     <View style={{ flex: 1, paddingTop: 60, justifyContent: 'flex-start', alignItems: 'center' }}>
@@ -53,7 +107,7 @@ const ImageCarousel = () => {
           contentContainerStyle={{
             alignItems: 'center',
             justifyContent: 'center',
-            paddingTop: 60, // Large top margin
+            paddingTop: 60,
           }}
           renderItem={({ item }) => (
             <View
@@ -72,9 +126,8 @@ const ImageCarousel = () => {
                 source={{ uri: item }}
                 style={{
                   width: IMAGE_WIDTH,
-                  height: IMAGE_HEIGHT, // Must be bigger than CROP_HEIGHT
-                  marginTop: IMAGE_HEIGHT / 2 - (CROP_HEIGHT + 75), // Crop out top half
-                  // marginTop can be tuned to crop exactly as desired
+                  height: IMAGE_HEIGHT,
+                  marginTop: IMAGE_HEIGHT / 2 - (CROP_HEIGHT + 75),
                 }}
                 resizeMode="cover"
               />
